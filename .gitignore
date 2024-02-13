@@ -1,5 +1,4 @@
 .env
 venv
-train.csv
-CollegeList.csv
-CollegeList.xlsx
+*.csv
+*.xlsx
