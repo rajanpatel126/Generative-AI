@@ -7,3 +7,4 @@ langchain-google-genai
 pandas
 pypdf
 chromadb
+duckduckgo-search
