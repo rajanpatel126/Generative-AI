@@ -1,4 +1,4 @@
-langchain
+LangChain===0.0.184
 PyPDF2
 python-dotenv
 streamlit==1.18.1
@@ -9,6 +9,8 @@ tiktoken
 langchain-community
 langchain_openai
 langchain_text_splitters
+langchain-community
+urllib3==1.25.11
 # uncomment to use huggingface llms
 huggingface-hub
 

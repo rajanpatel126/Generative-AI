@@ -3,55 +3,59 @@ from dotenv import load_dotenv
 from PyPDF2 import PdfReader
 from langchain_text_splitters import CharacterTextSplitter
 from langchain_openai.embeddings import OpenAIEmbeddings
-from langchain_community.vectorstores import FAISS
+from langchain.vectorstores import FAISS
 from langchain.memory import ConversationBufferMemory
-from langchain.chains import ConversationalRetrievalChain, LLMChain
+from langchain.chains import ConversationalRetrievalChain
 from langchain_openai import ChatOpenAI
-from langchain_core.prompts import PromptTemplate
 from htmlTemplates import bot_template, css, user_template
 
 def get_pdf_text(pdf_docs):
-    text=""
+    text = ""
     for pdf in pdf_docs:
         pdf_reader = PdfReader(pdf)
         for page in pdf_reader.pages:
-            text+=page.extract_text()
+            text += page.extract_text()
+    print("---------------------------------------------------------------------------------------------------------")
+    print("Total size: ",len(text)," Bytes")
+    print("---------------------------------------------------------------------------------------------------------")
     return text
     
 def get_text_chunks(text):
-    text_splitter = CharacterTextSplitter(separator="\n", chunk_size=1000, chunk_overlap=200, length_function=len)
+    text_splitter = CharacterTextSplitter(
+        separator="\n",
+        chunk_size=1000,
+        chunk_overlap=200,
+        length_function=len
+    )
     chunks = text_splitter.split_text(text)
     return chunks
     
 def get_vector_store(text_chunks):
     embeddings = OpenAIEmbeddings()
-    vectorstore = FAISS.afrom_documents(text_chunks, embedding=embeddings)
+    vectorstore = FAISS.from_texts(texts=text_chunks, embedding=embeddings)
     return vectorstore
 
 def get_conversation_chain(vectorStore):
     llm = ChatOpenAI()
-    
-    template = """You are the bot which helps the user to answer the question in a friendly manner about the PDFs. """
-    prompt = PromptTemplate.from_template(template)
-    question_generator_chain = LLMChain(llm=llm, prompt=prompt)
-    memory = ConversationBufferMemory(memory_key='chat history', return_messages=True)
-    retriver = vectorStore.as_retriever()
-    
-    conversation_chain = ConversationalRetrievalChain.from_llm( question_generator=question_generator_chain, 
-                                                               retriever=retriver, 
-                                                               memory=memory,
-                                                               verbose=True)
+    memory = ConversationBufferMemory(memory_key='chat_history', return_messages=True)
+    conversation_chain = ConversationalRetrievalChain.from_llm(
+        llm=llm,
+        retriever=vectorStore.as_retriever(),
+        memory=memory
+    )
     return conversation_chain
 
-async def handle_userInput(user_input):
-    response = await st.session_state.conversation({'question': user_input})
+def handle_userInput(user_input):
+    response = st.session_state.conversation({'question': user_input})
     st.session_state.chat_history = response['chat_history']
-    
-    for i, msg in enumerate(st.sesssion_state.chat_history):
-        if i%2==0:
-            st.write(user_template.replace("{{MSG}}",msg.content), unsafe_allow_html=True)
+
+    for i, message in enumerate(st.session_state.chat_history):
+        if i % 2 == 0:
+            st.write(user_template.replace(
+                "{{MSG}}", message.content), unsafe_allow_html=True)
         else:
-            st.write(bot_template.replace("{{MSG}}",msg.content), unsafe_allow_html=True)
+            st.write(bot_template.replace(
+                "{{MSG}}", message.content), unsafe_allow_html=True)
 
 def main(): 
     load_dotenv()
@@ -71,26 +75,28 @@ def main():
         handle_userInput(user_input)
     
     with st.sidebar:
-        st.subheader('Your Documents')
-        pdf_docs = st.file_uploader("Upload your PDFs and click the 'Process' button",accept_multiple_files=True)
-        if st.button('Process'):
-            with st.spinner('Processing'):
-                
-                #get pdf texts
-                raw_text = get_pdf_text(pdf_docs)
-                
-                #get the chunks of the pdfs
-                text_chunks = get_text_chunks(raw_text)
-                # st.write(text_chunks)
-                
-                #vector store with embeddings
-                vectorStore = get_vector_store(text_chunks)
-                st.write(vectorStore)
-                
-                #conversation chain
-                st.session_state.conversation = get_conversation_chain(vectorStore)
-                
-            st.write('Completed')
+        st.subheader("Your documents")
+        pdf_docs = st.file_uploader("Upload your PDFs here and click on 'Process'", accept_multiple_files=True)
+        if st.button("Process"):
+            process_pdf_files(pdf_docs=pdf_docs)
+            
+def process_pdf_files(pdf_docs):
+    with st.spinner("Processing"):
+        # get pdf text
+        raw_text = get_pdf_text(pdf_docs)
+        print("from ",pdf_docs," text extracted...............................................................")
+        
+        # get the text chunks
+        text_chunks = get_text_chunks(raw_text)
+        # st.write(text_chunks)
+        print("chunk created..................................................................................")
+
+        # create vector store
+        vectorstore = get_vector_store(text_chunks)
+        print("vector store created...........................................................................")
+
+        # create conversation chain
+        st.session_state.conversation = get_conversation_chain(vectorstore)
     
     
 if __name__ == '__main__':
