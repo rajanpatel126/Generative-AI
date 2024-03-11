@@ -1,0 +1,4 @@
+langchain===0.0.184
+streamlit
+langchain-openai
+python-dotenv
