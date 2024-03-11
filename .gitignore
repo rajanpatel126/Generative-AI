@@ -4,3 +4,5 @@ venv
 *.xlsx
 *.pdf
 *.sqlite3
+.ipynb_checkpoints
+__pycache__
