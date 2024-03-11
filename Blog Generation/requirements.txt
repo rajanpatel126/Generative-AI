@@ -1,0 +1,6 @@
+langchain-community
+python-dotenv
+langchain
+streamlit
+huggingface-hub
+google-api-python-client>=2.100.0
