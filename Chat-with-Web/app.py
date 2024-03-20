@@ -6,11 +6,10 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain.chains import create_history_aware_retriever
+from langchain.chains import create_history_aware_retriever, create_retrieval_chain
+from langchain.chains.combine_documents import create_stuff_documents_chain
 
 load_dotenv()
-def getResponse(user_query):
-    return 'I do not know'
 
 def get_vectorStore_url(url):
     #get the text from the website
@@ -40,14 +39,34 @@ def get_contextual_retrival_chain(vector_store):
     
     return retriver_chain
 
+def get_conversational_rag_chain(retriver_chain):
+    
+    llm = ChatOpenAI()
+    
+    prompt = ChatPromptTemplate.from_messages([
+        ('system', "Answer the User's question based on the below context:\n\n{context}"),
+        MessagesPlaceholder(variable_name='chat_history'),
+        ('user', '{input}')
+    ])
+    stuff_document_chain = create_stuff_documents_chain(llm, prompt)
+    
+    return create_retrieval_chain(retriver_chain, stuff_document_chain)
+
+def getResponse(user_query):
+    retriver_chain = get_contextual_retrival_chain(st.session_state.vector_store)
+    
+    conversation_rag_chain = get_conversational_rag_chain(retriver_chain)
+    
+    response = conversation_rag_chain.invoke({
+            'chat_history': st.session_state.chat_history,
+            'input' : user_query
+    })
+    
+    return response['answer']
+
 # app config
 st.set_page_config(page_title="Chat with websites", page_icon="🤖")
 st.title("Chat with websites")
-
-if 'chat_history' not in st.session_state:
-    st.session_state.chat_history = [
-        AIMessage(content='Hello, I am a bot. How can I help you?' )
-    ]
 
 # sidebar
 with st.sidebar:
@@ -57,10 +76,14 @@ with st.sidebar:
 if website_url is None or website_url == "":
     st.info("Please Enter the website URL")
 else:
-    
-    vector_store = get_vectorStore_url(website_url)
-    
-    retriver_chain = get_contextual_retrival_chain(vector_store)
+    #session state
+    if 'chat_history' not in st.session_state:
+        st.session_state.chat_history = [
+            AIMessage(content='Hello, I am a bot. How can I help you?' )
+        ]
+    #storing vector_store in the session state, so that every time, user doesn't need to upload the website URL.
+    if 'vector_store' not in st.session_state:
+        st.session_state.vector_store = get_vectorStore_url(website_url)
     
     st.info(f"Chatting with {website_url}")
     user_query = st.chat_input("Type your queries here...")
@@ -68,13 +91,6 @@ else:
         response = getResponse(user_query)
         st.session_state.chat_history.append(HumanMessage(user_query))
         st.session_state.chat_history.append(AIMessage(content=response))
-        
-        retrived_documents = retriver_chain.invoke({
-            'chat_history' : st.session_state.chat_history,
-            'input' : user_query
-        })
-        
-        st.write_stream(retrived_documents)
         
     #conversations
     for message in st.session_state.chat_history:
