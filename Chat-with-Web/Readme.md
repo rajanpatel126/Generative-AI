@@ -39,3 +39,10 @@ To run the Streamlit app:
 ```bash
 streamlit run app.py
 ```
+
+## Vector store conflicts
+
+- i have used two different vector databases: **FAISS** and **Chroma**
+- Chroma works perffectly if you have Python version >=3.10, because I am using version 3.9 I have the error of SqlLite on the strealit cloud becasue Python 3.9 bundled with old version of SqlLite
+- Here's the error explanation: [https://docs.trychroma.com/troubleshooting?lang=py](https://docs.trychroma.com/troubleshooting?lang=py)
+- FAISS has not issues whatsoever with version conflicts. So, if you have higher version of python then you can use Chroma in your application, otherwise FAISS is only option for you.
