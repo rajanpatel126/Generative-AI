@@ -4,5 +4,5 @@ langchain_core===0.1.32
 langchain_openai===0.0.8
 python-dotenv===1.0.1
 streamlit===1.32.2
-chromadb===0.4.24
+chromadb
 beautifulsoup4===4.12.3 
