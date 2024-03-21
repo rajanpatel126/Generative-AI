@@ -71,6 +71,7 @@ st.title("Chat with websites")
 # sidebar
 with st.sidebar:
     st.header("Settings")
+    st.caption("Paste the URL containing http and Press Enter")
     website_url = st.text_input("Website URL")
     
 if website_url is None or website_url == "":
