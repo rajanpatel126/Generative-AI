@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_community.document_loaders import WebBaseLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import Chroma
+from langchain_community.vectorstores import Chroma, FAISS
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.chains import create_history_aware_retriever, create_retrieval_chain
@@ -21,7 +21,7 @@ def get_vectorStore_url(url):
     document_chunks = text_splitter.split_documents(documents)
     
     #create the vector store
-    vector_store = Chroma.from_documents(document_chunks, OpenAIEmbeddings())
+    vector_store = FAISS.from_documents(document_chunks, OpenAIEmbeddings())
     return vector_store
 
 def get_contextual_retrival_chain(vector_store):
